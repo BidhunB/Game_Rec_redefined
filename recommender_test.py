@@ -1,6 +1,8 @@
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
 
 # === 1. LOAD RAWG DATA FROM CSV ===
 
@@ -40,30 +42,57 @@ def prepare_tfidf_matrix(games_df):
     tfidf_matrix = vectorizer.fit_transform(games_df["combined"])
     return tfidf_matrix
 
+def sentence_transformer_model(games_df):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    embeddings = model.encode(games_df["combined"].tolist(), show_progress_bar=True)
+    return embeddings
 
 def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=10):
-    liked_game_ids = interactions_df[
-        (interactions_df['user_id'] == user_id) & (interactions_df['liked'])
-    ]['game_id']
-    
-    if liked_game_ids.empty:
+    user_interactions = interactions_df[interactions_df['user_id'] == user_id]
+    liked_ids = user_interactions[user_interactions['liked']]['game_id']
+    disliked_ids = user_interactions[~user_interactions['liked']]['game_id']
+
+    liked_indices = games_df[games_df['id'].isin(liked_ids)].index
+    disliked_indices = games_df[games_df['id'].isin(disliked_ids)].index
+
+    if liked_indices.empty and disliked_indices.empty:
         return pd.DataFrame()
 
-    liked_indices = games_df[games_df['id'].isin(liked_game_ids)].index
-    if liked_indices.empty:
-        return pd.DataFrame()
-
-    # FIX HERE — convert to array
-    import numpy as np
-    user_vector = np.asarray(tfidf_matrix[liked_indices].mean(axis=0))
+    user_vector = np.zeros((1, tfidf_matrix.shape[1]))
+    if not liked_indices.empty:
+        user_vector += tfidf_matrix[liked_indices].mean(axis=0)
+    if not disliked_indices.empty:
+        user_vector -= tfidf_matrix[disliked_indices].mean(axis=0)
 
     similarity_scores = cosine_similarity(user_vector, tfidf_matrix).flatten()
-
-    already_seen = interactions_df[interactions_df['user_id'] == user_id]['game_id'].tolist()
+    already_seen = user_interactions['game_id'].tolist()
     games_df = games_df.copy()
     games_df['similarity'] = similarity_scores
     recs = games_df[~games_df['id'].isin(already_seen)].sort_values(by='similarity', ascending=False)
+    return recs[['id', 'name', 'genre_text', 'similarity']].head(top_n)
 
+def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=10):
+    user_interactions = interactions_df[interactions_df['user_id'] == user_id]
+    liked_ids = user_interactions[user_interactions['liked']]['game_id']
+    disliked_ids = user_interactions[~user_interactions['liked']]['game_id']
+
+    liked_indices = games_df[games_df['id'].isin(liked_ids)].index
+    disliked_indices = games_df[games_df['id'].isin(disliked_ids)].index
+
+    if liked_indices.empty and disliked_indices.empty:
+        return pd.DataFrame()
+
+    user_vector = np.zeros((1, embeddings.shape[1]))
+    if not liked_indices.empty:
+        user_vector += np.mean(embeddings[liked_indices], axis=0, keepdims=True)
+    if not disliked_indices.empty:
+        user_vector -= np.mean(embeddings[disliked_indices], axis=0, keepdims=True)
+
+    similarity_scores = cosine_similarity(user_vector, embeddings).flatten()
+    already_seen = user_interactions['game_id'].tolist()
+    games_df = games_df.copy()
+    games_df['similarity'] = similarity_scores
+    recs = games_df[~games_df['id'].isin(already_seen)].sort_values(by='similarity', ascending=False)
     return recs[['id', 'name', 'genre_text', 'similarity']].head(top_n)
 
 # === 4. SIMULATED USER INTERACTIONS ===
@@ -71,8 +100,11 @@ def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=1
 def get_sample_interactions():
     return pd.DataFrame([
         {"user_id": "user1", "game_id": 3498, "liked": True, "rating": 5},   # GTA V
-        {"user_id": "user1", "game_id": 4200, "liked": True, "rating": 4},   # Portal 2
-        {"user_id": "user1", "game_id": 5286, "liked": False, "rating": 2}   # Disliked
+        {"user_id": "user1", "game_id": 28, "liked": True, "rating": 5}, #red dead redemption 2
+        {"user_id": "user1", "game_id": 58134, "liked": True, "rating": 4}, # marvels spiderman
+        {"user_id": "user1", "game_id": 22509, "liked": True, "rating": 4}, # Minecraft
+        {"user_id": "user1", "game_id": 42895, "liked": True, "rating": 4},# Assassin's Creed syndicate
+        {"user_id": "user1", "game_id": 437059, "liked": False, "rating": 2}   # Assassin's Creed Valhalla
     ])
 
 
@@ -85,14 +117,23 @@ def run_test_program(csv_path: str):
     print(cold_start_recommendations(games_df, top_n=5).to_string(index=False))
 
     tfidf_matrix = prepare_tfidf_matrix(games_df)
+    
     interactions_df = get_sample_interactions()
 
-    print("\n🧠 Personalized Recommendations for user1:")
+    print("\n🧠 Personalized Recommendations for user1 (TF-IDF):")
     personalized = recommend_for_user("user1", interactions_df, games_df, tfidf_matrix, top_n=10)
     if not personalized.empty:
         print(personalized.to_string(index=False))
     else:
         print("Not enough interaction data for personalized recommendations.")
+
+    print("\n🤖 Personalized Recommendations for user1 (SentenceTransformer):")
+    embeddings = sentence_transformer_model(games_df)
+    personalized_st = recommend_for_user_sentence_transformer("user1", interactions_df, games_df, embeddings, top_n=10)
+    if not personalized_st.empty:
+        print(personalized_st.to_string(index=False))
+    else:
+        print("Not enough interaction data for personalized recommendations (SentenceTransformer).")
 
 
 # === USAGE ===
