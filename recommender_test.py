@@ -28,11 +28,11 @@ def load_games_dataset(csv_path: str):
 
 # === 2. COLD START RECOMMENDATION ===
 
-def cold_start_recommendations(games_df, top_n=10):
+def cold_start_recommendations(games_df, top_n=12):
     sort_cols = [col for col in ['rating', 'ratings_count'] if col in games_df.columns]
     if not sort_cols:
         return games_df.sample(n=top_n)
-    return games_df.sort_values(by=sort_cols, ascending=False).head(top_n)[["id", "name", "genre_text"] + sort_cols]
+    return games_df.sort_values(by=sort_cols, ascending=False).head(top_n)[["id", "name", "genre_text", "background_image"] + sort_cols]
 
 
 # === 3. CONTENT-BASED RECOMMENDATION ===
@@ -47,7 +47,7 @@ def sentence_transformer_model(games_df):
     embeddings = model.encode(games_df["combined"].tolist(), show_progress_bar=True)
     return embeddings
 
-def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=10):
+def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=12):
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
     disliked_ids = user_interactions[~user_interactions['liked']]['game_id']
@@ -69,9 +69,9 @@ def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=1
     games_df = games_df.copy()
     games_df['similarity'] = similarity_scores
     recs = games_df[~games_df['id'].isin(already_seen)].sort_values(by='similarity', ascending=False)
-    return recs[['id', 'name', 'genre_text', 'similarity']].head(top_n)
+    return recs[['id', 'name', 'genre_text', 'similarity', "background_image"]].head(top_n)
 
-def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=10):
+def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=12):
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
     disliked_ids = user_interactions[~user_interactions['liked']]['game_id']
@@ -87,13 +87,13 @@ def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, 
         user_vector += np.mean(embeddings[liked_indices], axis=0, keepdims=True)
     if not disliked_indices.empty:
         user_vector -= np.mean(embeddings[disliked_indices], axis=0, keepdims=True)
-
+        print(user_vector)
     similarity_scores = cosine_similarity(user_vector, embeddings).flatten()
     already_seen = user_interactions['game_id'].tolist()
     games_df = games_df.copy()
     games_df['similarity'] = similarity_scores
     recs = games_df[~games_df['id'].isin(already_seen)].sort_values(by='similarity', ascending=False)
-    return recs[['id', 'name', 'genre_text', 'similarity']].head(top_n)
+    return recs[['id', 'name', 'genre_text', 'similarity', "background_image"]].head(top_n)
 
 # === 4. SIMULATED USER INTERACTIONS ===
 

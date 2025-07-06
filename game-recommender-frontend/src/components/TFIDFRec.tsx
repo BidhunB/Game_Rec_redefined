@@ -1,11 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
+import LoadingSpinner from "./LoadingSpinner";
+import LikeButton from "./LikeButton";
 
 type Game = {
   id: number;
   name: string;
   genre_text: string;
   similarity: number;
+  background_image?: string;
 };
 
 export default function TFIDFRec() {
@@ -21,20 +24,84 @@ export default function TFIDFRec() {
       });
   }, []);
 
-  if (loading) return <p>Loading TF-IDF recommendations...</p>;
+  if (loading) return <LoadingSpinner color="green" text="Loading TF-IDF recommendations..." />;
 
   return (
-    <div className="p-4 mt-8">
-      <h2 className="text-2xl font-bold mb-4">🧠 TF-IDF Recommendations</h2>
-      <ul className="space-y-3">
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-white mb-2">
+          🧠 TF-IDF AI Recommendations
+        </h2>
+        <p className="text-gray-300">AI-powered content-based filtering using TF-IDF algorithm</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {games.map((game) => (
-          <li key={game.id} className="p-3 border rounded shadow hover:bg-gray-50 transition">
-            <p className="font-semibold">{game.name}</p>
-            <p className="text-sm text-gray-600">Genres: {game.genre_text}</p>
-            <p className="text-sm">📈 Similarity: {game.similarity.toFixed(3)}</p>
-          </li>
+          <div
+            key={game.id}
+            className="group bg-white/10 backdrop-blur-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 border border-white/20 overflow-hidden hover:-translate-y-2"
+          >
+            {game.background_image && (
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src={game.background_image}
+                  alt={game.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div className="absolute top-3 right-3">
+                  <div className="bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
+                    📈 {(game.similarity * 100).toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="p-5">
+              <h3 className="font-bold text-lg mb-3 text-white group-hover:text-green-300 transition-colors duration-300 line-clamp-2">
+                {game.name}
+              </h3>
+              
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2">
+                  {game.genre_text.split(',').map((genre, index) => (
+                    <span
+                      key={index}
+                      className="bg-green-500/20 text-green-200 px-3 py-1 rounded-full text-xs font-medium border border-green-400/30"
+                    >
+                      {genre.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-green-400 text-lg">📈</span>
+                    <span className="text-sm font-semibold text-gray-200">
+                      {(game.similarity * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-emerald-400 text-lg">🧠</span>
+                    <span className="text-sm text-gray-300 font-medium">
+                      TF-IDF
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Like Button */}
+              <div className="mt-4 flex justify-center">
+                <LikeButton gameId={game.id} gameName={game.name} />
+              </div>
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
