@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import LikeButton from "./LikeButton";
+import Image from "next/image";
 
 type Game = {
   id: number;
@@ -42,10 +43,12 @@ export default function HybridBERTRec() {
           >
             {game.background_image && (
               <div className="relative h-48 overflow-hidden">
-                <img
+                <Image
                   src={game.background_image}
                   alt={game.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  layout="fill"
+                  objectFit="cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                 <div className="absolute top-3 right-3">

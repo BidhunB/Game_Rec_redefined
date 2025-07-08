@@ -31,7 +31,9 @@ app.add_middleware(
 # Load everything once when server starts
 games_df = load_games_dataset("rawg_games.csv")
 tfidf_matrix = prepare_tfidf_matrix(games_df)
+print("Starting sentence transformer model...")
 embeddings = sentence_transformer_model(games_df)
+print("Sentence transformer model loaded.")
 interactions_df = get_sample_interactions()
 
 # Pydantic model for like data
