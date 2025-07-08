@@ -2,7 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["media.rawg.io"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "media.rawg.io",
+        port: "",
+        pathname: "/**",
+      },
+    ],
   },
   /* config options here */
 };

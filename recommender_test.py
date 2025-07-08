@@ -1,16 +1,15 @@
+import os
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-import os
-import pandas as pd
 
-# === 1. LOAD RAWG DATA FROM CSV ===
+# === 1. DATA LOADING ===
 def load_games_dataset(csv_path: str):
     df = pd.read_csv(csv_path)
 
-    # Create genre_text if it doesn't exist
+    # Create genre_text if missing
     if 'genre_text' not in df.columns:
         if 'genres' in df.columns:
             df['genre_text'] = df['genres'].fillna('[]').apply(
@@ -24,28 +23,34 @@ def load_games_dataset(csv_path: str):
     df.reset_index(drop=True, inplace=True)
     return df
 
+def get_sample_interactions():
+    csv_path = "user_interactions.csv"
+    if os.path.isfile(csv_path):
+        df = pd.read_csv(csv_path)
+        df["liked"] = df["liked"].astype(bool)
+        df["rating"] = df["rating"].astype(int)
+        return df
+    else:
+        print(f"File {csv_path} not found. Returning empty DataFrame.")
+        return pd.DataFrame(columns=["user_id", "game_id", "liked", "rating"])
 
-# === 2. COLD START RECOMMENDATION ===
+# === 2. FEATURE PREPARATION ===
+def prepare_tfidf_matrix(games_df):
+    vectorizer = TfidfVectorizer(stop_words='english')
+    return vectorizer.fit_transform(games_df["combined"])
+
+def sentence_transformer_model(games_df):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    return model.encode(games_df["combined"].tolist(), show_progress_bar=True)
+
+# === 3. COLD START RECOMMENDATION ===
 def cold_start_recommendations(games_df, top_n=10):
     sort_cols = [col for col in ['rating', 'ratings_count'] if col in games_df.columns]
     if not sort_cols:
         return games_df.sample(n=top_n)
     return games_df.sort_values(by=sort_cols, ascending=False).head(top_n)[["id", "name", "genre_text", "background_image"] + sort_cols]
 
-
-# === 3. CONTENT-BASED RECOMMENDATION ===
-def prepare_tfidf_matrix(games_df):
-    vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = vectorizer.fit_transform(games_df["combined"])
-    return tfidf_matrix
-
-
-def sentence_transformer_model(games_df):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    embeddings = model.encode(games_df["combined"].tolist(), show_progress_bar=True)
-    return embeddings
-
-
+# === 4. CONTENT-BASED RECOMMENDATION ===
 def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=10):
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
@@ -70,7 +75,7 @@ def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=1
     recs = games_df[~games_df['id'].isin(already_seen)].sort_values(by='similarity', ascending=False)
     return recs[['id', 'name', 'genre_text', 'similarity', 'background_image']].head(top_n)
 
-
+# === 5. CONTENT-BASED USING BERT (SentenceTransformer) ===
 def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=10):
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
@@ -95,22 +100,7 @@ def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, 
     recs = games_df[~games_df['id'].isin(already_seen)].sort_values(by='similarity', ascending=False)
     return recs[['id', 'name', 'genre_text', 'similarity', 'background_image']].head(top_n)
 
-
-# === 4. SIMULATED USER INTERACTIONS ===
-def get_sample_interactions():
-    csv_path = "user_interactions.csv"
-    if os.path.isfile(csv_path):
-        df = pd.read_csv(csv_path)
-        # Ensure correct dtypes
-        df["liked"] = df["liked"].astype(bool)
-        df["rating"] = df["rating"].astype(int)
-        return df
-    else:
-        print(f"File {csv_path} not found. Returning empty DataFrame.")
-        return pd.DataFrame(columns=["user_id", "game_id", "liked", "rating"])
-
-
-# === 5. COLLABORATIVE FILTERING ===
+# === 6. COLLABORATIVE FILTERING ===
 def get_collaborative_scores(user_id, interactions_df, games_df):
     matrix = pd.pivot_table(
         interactions_df,
@@ -134,7 +124,7 @@ def get_collaborative_scores(user_id, interactions_df, games_df):
             scores[i] = normalized_scores[game_id_to_index[gid]]
     return scores
 
-
+# === 7. HYBRID RECOMMENDATIONS ===
 def get_content_scores(user_id, interactions_df, games_df, tfidf_matrix):
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
@@ -152,9 +142,7 @@ def get_content_scores(user_id, interactions_df, games_df, tfidf_matrix):
     if not disliked_indices.empty:
         user_vector -= tfidf_matrix[disliked_indices].mean(axis=0)
 
-    similarity_scores = cosine_similarity(user_vector, tfidf_matrix).flatten()
-    return similarity_scores
-
+    return cosine_similarity(user_vector, tfidf_matrix).flatten()
 
 def hybrid_recommendation(user_id, interactions_df, games_df, tfidf_matrix, top_n=10, content_weight=0.5, collab_weight=0.5):
     content_scores = get_content_scores(user_id, interactions_df, games_df, tfidf_matrix)
@@ -167,7 +155,7 @@ def hybrid_recommendation(user_id, interactions_df, games_df, tfidf_matrix, top_
     recs = games_df[~games_df['id'].isin(seen_ids)].sort_values(by='score', ascending=False)
     return recs[['id', 'name', 'genre_text', 'score', 'background_image']].head(top_n)
 
-
+# === 8. HYBRID BERT RECOMMENDATIONS ===
 def get_content_scores_sentence_transformer(user_id, interactions_df, games_df, embeddings):
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
@@ -185,9 +173,7 @@ def get_content_scores_sentence_transformer(user_id, interactions_df, games_df, 
     if not disliked_indices.empty:
         user_vector -= np.mean(embeddings[disliked_indices], axis=0, keepdims=True)
 
-    similarity_scores = cosine_similarity(user_vector, embeddings).flatten()
-    return similarity_scores
-
+    return cosine_similarity(user_vector, embeddings).flatten()
 
 def hybrid_recommendation_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=10, content_weight=0.5, collab_weight=0.5):
     content_scores = get_content_scores_sentence_transformer(user_id, interactions_df, games_df, embeddings)

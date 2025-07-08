@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
+from apscheduler.schedulers.background import BackgroundScheduler
+import threading
 import csv
 
 from recommender_test import (
@@ -31,28 +33,40 @@ app.add_middleware(
 # === Constants ===
 INTERACTIONS_FILE = Path("user_interactions.csv")
 
-# === Load on Startup ===
+# Shared variables
 games_df = load_games_dataset("rawg_games.csv")
 tfidf_matrix = prepare_tfidf_matrix(games_df)
 embeddings = sentence_transformer_model(games_df)
+lock = threading.Lock()
+
+def update_game_data():
+    global games_df, tfidf_matrix, embeddings
+    try:
+        print("[Update] Loading fresh data...")
+        new_df = load_games_dataset("rawg_games.csv")
+        new_tfidf = prepare_tfidf_matrix(new_df)
+        new_embeddings = sentence_transformer_model(new_df)
+
+        with lock:
+            games_df = new_df
+            tfidf_matrix = new_tfidf
+            embeddings = new_embeddings
+        print("[Update] Game data updated.")
+    except Exception as e:
+        print(f"[Update Error] {e}")
+
+# Scheduler setup
+scheduler = BackgroundScheduler()
+scheduler.add_job(update_game_data, "interval", minutes=5)  # Adjust timing as needed
+scheduler.start()
 
 # === Pydantic Models ===
-# class LikeData(BaseModel):
-#     game_id: int
-#     game_name: str
-#     action: str  # "like" or "unlike"
-#     timestamp: str
-
 class InteractionData(BaseModel):
     user_id: str
     game_id: int
     liked: bool
     rating: int
     timestamp: str
-
-# class LoginData(BaseModel):
-#     username: str
-#     password: str
 
 # === Helper Function ===
 def log_interaction(data: InteractionData):
@@ -64,19 +78,6 @@ def log_interaction(data: InteractionData):
         writer.writerow([data.user_id, data.game_id, data.liked, data.rating])
 
 # === API Endpoints ===
-
-# @app.post("/like")
-# def like_game(data: LikeData):
-#     try:
-#         print(f"[Like] {data.user_id} {data.action} {data.game_name} at {data.timestamp}")
-#         return {
-#             "success": True,
-#             "message": f"{data.action.title()}ed {data.game_name}",
-#             "game_id": data.game_id,
-#             "timestamp": data.timestamp
-#         }
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/newInteraction")
 def new_interaction(data: InteractionData):
