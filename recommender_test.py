@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+import os
+import pandas as pd
 
 # === 1. LOAD RAWG DATA FROM CSV ===
 def load_games_dataset(csv_path: str):
@@ -96,68 +98,16 @@ def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, 
 
 # === 4. SIMULATED USER INTERACTIONS ===
 def get_sample_interactions():
-    return pd.DataFrame([
-        # === USER 1 ===
-        {"user_id": "user1", "game_id": 3498, "liked": True, "rating": 5},     # GTA V
-        {"user_id": "user1", "game_id": 28, "liked": True, "rating": 5},       # RDR2
-        {"user_id": "user1", "game_id": 58134, "liked": True, "rating": 4},    # Spider-Man
-        {"user_id": "user1", "game_id": 22509, "liked": True, "rating": 4},    # Minecraft
-        {"user_id": "user1", "game_id": 42895, "liked": True, "rating": 4},    # AC Syndicate
-        {"user_id": "user1", "game_id": 437059, "liked": False, "rating": 2},  # AC Valhalla
-
-        # === USER 2 ===
-        {"user_id": "user2", "game_id": 3498, "liked": True, "rating": 5},     # GTA V
-        {"user_id": "user2", "game_id": 3328, "liked": True, "rating": 5},     # Witcher 3
-        {"user_id": "user2", "game_id": 4200, "liked": True, "rating": 4},     # Portal 2
-        {"user_id": "user2", "game_id": 5679, "liked": False, "rating": 2},    # Terraria
-        {"user_id": "user2", "game_id": 42895, "liked": True, "rating": 4},    # AC Syndicate
-
-        # === USER 3 ===
-        {"user_id": "user3", "game_id": 3328, "liked": True, "rating": 5},     # Witcher 3
-        {"user_id": "user3", "game_id": 5679, "liked": True, "rating": 4},     # Terraria
-        {"user_id": "user3", "game_id": 22509, "liked": False, "rating": 2},   # Minecraft
-        {"user_id": "user3", "game_id": 28, "liked": True, "rating": 5},       # RDR2
-        {"user_id": "user3", "game_id": 5286, "liked": True, "rating": 4},     # Hollow Knight
-
-        # === USER 4 ===
-        {"user_id": "user4", "game_id": 28, "liked": True, "rating": 5},       # RDR2
-        {"user_id": "user4", "game_id": 4200, "liked": True, "rating": 4},     # Portal 2
-        {"user_id": "user4", "game_id": 58134, "liked": False, "rating": 2},   # Spider-Man
-        {"user_id": "user4", "game_id": 22509, "liked": True, "rating": 4},    # Minecraft
-
-        # === USER 5 ===
-        {"user_id": "user5", "game_id": 3498, "liked": False, "rating": 1},    # GTA V
-        {"user_id": "user5", "game_id": 5679, "liked": True, "rating": 4},     # Terraria
-        {"user_id": "user5", "game_id": 3328, "liked": False, "rating": 2},    # Witcher 3
-        {"user_id": "user5", "game_id": 5286, "liked": True, "rating": 5},     # Hollow Knight
-
-        # === USER 6 ===
-        {"user_id": "user6", "game_id": 58134, "liked": True, "rating": 4},    # Spider-Man
-        {"user_id": "user6", "game_id": 437059, "liked": True, "rating": 4},   # AC Valhalla
-        {"user_id": "user6", "game_id": 22509, "liked": False, "rating": 1},   # Minecraft
-        {"user_id": "user6", "game_id": 28, "liked": True, "rating": 5},       # RDR2
-
-        # === USER 7 ===
-        {"user_id": "user7", "game_id": 4200, "liked": True, "rating": 5},     # Portal 2
-        {"user_id": "user7", "game_id": 3328, "liked": True, "rating": 4},     # Witcher 3
-        {"user_id": "user7", "game_id": 58134, "liked": False, "rating": 2},   # Spider-Man
-
-        # === USER 8 ===
-        {"user_id": "user8", "game_id": 42895, "liked": True, "rating": 4},    # AC Syndicate
-        {"user_id": "user8", "game_id": 4200, "liked": True, "rating": 5},     # Portal 2
-        {"user_id": "user8", "game_id": 5679, "liked": False, "rating": 1},    # Terraria
-
-        # === USER 9 ===
-        {"user_id": "user9", "game_id": 5286, "liked": True, "rating": 5},     # Hollow Knight
-        {"user_id": "user9", "game_id": 22509, "liked": True, "rating": 4},    # Minecraft
-        {"user_id": "user9", "game_id": 3498, "liked": False, "rating": 1},    # GTA V
-
-        # === USER 10 ===
-        {"user_id": "user10", "game_id": 58134, "liked": True, "rating": 5},   # Spider-Man
-        {"user_id": "user10", "game_id": 3328, "liked": True, "rating": 4},    # Witcher 3
-        {"user_id": "user10", "game_id": 3498, "liked": True, "rating": 4},    # GTA V
-        {"user_id": "user10", "game_id": 28, "liked": False, "rating": 2},     # RDR2
-    ])
+    csv_path = "user_interactions.csv"
+    if os.path.isfile(csv_path):
+        df = pd.read_csv(csv_path)
+        # Ensure correct dtypes
+        df["liked"] = df["liked"].astype(bool)
+        df["rating"] = df["rating"].astype(int)
+        return df
+    else:
+        print(f"File {csv_path} not found. Returning empty DataFrame.")
+        return pd.DataFrame(columns=["user_id", "game_id", "liked", "rating"])
 
 
 # === 5. COLLABORATIVE FILTERING ===

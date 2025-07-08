@@ -94,7 +94,7 @@ export default function ColdStart() {
                 </div>
               </div>
               
-              {/* Like Button */}
+              {/* Like Button (now with rating popup for both like and dislike) */}
               <div className="mt-4 flex justify-center">
                 <LikeButton gameId={game.id} gameName={game.name} />
               </div>

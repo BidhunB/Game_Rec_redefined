@@ -1,9 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import datetime
-import pandas as pd
-import json
+from pathlib import Path
+import csv
+
 from recommender_test import (
     load_games_dataset,
     cold_start_recommendations,
@@ -19,62 +19,72 @@ from recommender_test import (
 
 app = FastAPI()
 
-# Allow requests from frontend (like Next.js)
+# === CORS Setup ===
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace "*" with your frontend domain
+    allow_origins=["*"],  # Change to specific domain in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load everything once when server starts
+# === Constants ===
+INTERACTIONS_FILE = Path("user_interactions.csv")
+
+# === Load on Startup ===
 games_df = load_games_dataset("rawg_games.csv")
 tfidf_matrix = prepare_tfidf_matrix(games_df)
-print("Starting sentence transformer model...")
 embeddings = sentence_transformer_model(games_df)
-print("Sentence transformer model loaded.")
-interactions_df = get_sample_interactions()
 
-# Pydantic model for like data
-class LikeData(BaseModel):
+# === Pydantic Models ===
+# class LikeData(BaseModel):
+#     game_id: int
+#     game_name: str
+#     action: str  # "like" or "unlike"
+#     timestamp: str
+
+class InteractionData(BaseModel):
+    user_id: str
     game_id: int
-    game_name: str
-    action: str  # "like" or "unlike"
+    liked: bool
+    rating: int
     timestamp: str
 
-@app.post("/like")
-def like_game(like_data: LikeData):
-    """
-    Handle game likes/unlikes
-    This endpoint receives like data and can be used to:
-    - Store user preferences
-    - Update recommendation models
-    - Track user interactions
-    """
+# class LoginData(BaseModel):
+#     username: str
+#     password: str
+
+# === Helper Function ===
+def log_interaction(data: InteractionData):
+    is_new = not INTERACTIONS_FILE.exists()
+    with INTERACTIONS_FILE.open("a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if is_new:
+            writer.writerow(["user_id", "game_id", "liked", "rating"])
+        writer.writerow([data.user_id, data.game_id, data.liked, data.rating])
+
+# === API Endpoints ===
+
+# @app.post("/like")
+# def like_game(data: LikeData):
+#     try:
+#         print(f"[Like] {data.user_id} {data.action} {data.game_name} at {data.timestamp}")
+#         return {
+#             "success": True,
+#             "message": f"{data.action.title()}ed {data.game_name}",
+#             "game_id": data.game_id,
+#             "timestamp": data.timestamp
+#         }
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/newInteraction")
+def new_interaction(data: InteractionData):
     try:
-        # Log the like action
-        print(f"User {like_data.action} game: {like_data.game_name} (ID: {like_data.game_id}) at {like_data.timestamp}")
-        
-        # Here you could:
-        # 1. Store in database
-        # 2. Update user preferences
-        # 3. Retrain recommendation models
-        # 4. Send analytics
-        
-        # For now, just return success
-        return {
-            "success": True,
-            "message": f"Successfully {like_data.action} {like_data.game_name}",
-            "game_id": like_data.game_id,
-            "action": like_data.action,
-            "timestamp": like_data.timestamp
-        }
+        log_interaction(data)
+        return {"success": True, "message": "Interaction recorded", "data": data.dict()}
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/cold-start")
 def cold_start():
@@ -83,29 +93,33 @@ def cold_start():
 
 @app.get("/recommend/tfidf")
 def recommend_tfidf(user_id: str = "user1"):
-    recs = recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=12)
+    interactions = get_sample_interactions()
+    recs = recommend_for_user(user_id, interactions, games_df, tfidf_matrix, top_n=12)
     return recs.to_dict(orient="records")
 
 @app.get("/recommend/bert")
 def recommend_bert(user_id: str = "user1"):
-    recs = recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=12)
+    interactions = get_sample_interactions()
+    recs = recommend_for_user_sentence_transformer(user_id, interactions, games_df, embeddings, top_n=12)
     return recs.to_dict(orient="records")
 
 @app.get("/recommend/hybrid-bert")
 def recommend_hybrid_bert(user_id: str = "user1"):
-    recs = hybrid_recommendation_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=12)
+    interactions = get_sample_interactions()
+    recs = hybrid_recommendation_sentence_transformer(user_id, interactions, games_df, embeddings, top_n=12)
     return recs.to_dict(orient="records")
 
 @app.get("/recommend/collaborative")
 def recommend_collaborative(user_id: str = "user1"):
-    scores = get_collaborative_scores(user_id, interactions_df, games_df)
-    games_df_copy = games_df.copy()
-    games_df_copy['score'] = scores
-    recs = games_df_copy.sort_values(by='score', ascending=False)
-    recs = recs[['id', 'name', 'genre_text', 'score', 'background_image']].head(12)
-    return recs.to_dict(orient="records")
+    interactions = get_sample_interactions()
+    scores = get_collaborative_scores(user_id, interactions, games_df)
+    games_with_scores = games_df.copy()
+    games_with_scores["score"] = scores
+    recs = games_with_scores.sort_values(by="score", ascending=False)
+    return recs[["id", "name", "genre_text", "score", "background_image"]].head(12).to_dict(orient="records")
 
 @app.get("/recommend/hybrid-tfidf")
 def recommend_hybrid_tfidf(user_id: str = "user1"):
-    recs = hybrid_recommendation(user_id, interactions_df, games_df, tfidf_matrix, top_n=12)
+    interactions = get_sample_interactions()
+    recs = hybrid_recommendation(user_id, interactions, games_df, tfidf_matrix, top_n=12)
     return recs.to_dict(orient="records")
