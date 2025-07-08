@@ -11,7 +11,10 @@ from recommender_test import (
     get_sample_interactions,
     recommend_for_user,
     sentence_transformer_model,
-    recommend_for_user_sentence_transformer
+    recommend_for_user_sentence_transformer,
+    hybrid_recommendation_sentence_transformer,
+    get_collaborative_scores,
+    hybrid_recommendation
 )
 
 app = FastAPI()
@@ -84,4 +87,23 @@ def recommend_tfidf(user_id: str = "user1"):
 @app.get("/recommend/bert")
 def recommend_bert(user_id: str = "user1"):
     recs = recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=12)
+    return recs.to_dict(orient="records")
+
+@app.get("/recommend/hybrid-bert")
+def recommend_hybrid_bert(user_id: str = "user1"):
+    recs = hybrid_recommendation_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=12)
+    return recs.to_dict(orient="records")
+
+@app.get("/recommend/collaborative")
+def recommend_collaborative(user_id: str = "user1"):
+    scores = get_collaborative_scores(user_id, interactions_df, games_df)
+    games_df_copy = games_df.copy()
+    games_df_copy['score'] = scores
+    recs = games_df_copy.sort_values(by='score', ascending=False)
+    recs = recs[['id', 'name', 'genre_text', 'score', 'background_image']].head(12)
+    return recs.to_dict(orient="records")
+
+@app.get("/recommend/hybrid-tfidf")
+def recommend_hybrid_tfidf(user_id: str = "user1"):
+    recs = hybrid_recommendation(user_id, interactions_df, games_df, tfidf_matrix, top_n=12)
     return recs.to_dict(orient="records")

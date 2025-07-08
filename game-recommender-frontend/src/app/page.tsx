@@ -3,7 +3,9 @@ import { useState } from "react";
 import ColdStart from "@/components/ColdStart";
 import TFIDFRec from "@/components/TFIDFRec";
 import BERTRec from "@/components/BERTRec";
-import StatsCard from "@/components/StatsCard";
+import HybridBERTRec from "@/components/HybridBERTRec";
+import CollaborativeRec from "@/components/CollaborativeRec";
+import HybridTFIDFRec from "@/components/HybridTFIDFRec";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("cold-start");
@@ -29,6 +31,27 @@ export default function Home() {
       description: "Deep learning semantic analysis",
       component: <BERTRec />,
       icon: "🤖"
+    },
+    {
+      id: "hybrid-bert",
+      name: "Hybrid BERT",
+      description: "Collaborative + semantic AI",
+      component: <HybridBERTRec />,
+      icon: "🧬"
+    },
+    {
+      id: "collaborative",
+      name: "Collaborative",
+      description: "User-based filtering",
+      component: <CollaborativeRec />,
+      icon: "🤝"
+    },
+    {
+      id: "hybrid-tfidf",
+      name: "Hybrid TFIDF",
+      description: "Collaborative + content-based AI",
+      component: <HybridTFIDFRec />,
+      icon: "🧬"
     }
   ];
 
@@ -89,40 +112,6 @@ export default function Home() {
       {/* Content Area */}
       <div className="relative z-10 px-6 py-12">
         <div className="max-w-7xl mx-auto">
-          {/* Stats Section */}
-          {/* <div className="mb-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatsCard
-                title="Total Games"
-                value="10,000+"
-                description="Comprehensive database of games from various genres and platforms"
-                icon="🎮"
-                color="blue"
-              />
-              <StatsCard
-                title="AI Models"
-                value="3"
-                description="Multiple recommendation algorithms for diverse results"
-                icon="🤖"
-                color="green"
-              />
-              <StatsCard
-                title="Accuracy"
-                value="95%"
-                description="High precision recommendations based on user preferences"
-                icon="🎯"
-                color="purple"
-              />
-              <StatsCard
-                title="Real-time"
-                value="< 1s"
-                description="Instant recommendations powered by optimized algorithms"
-                icon="⚡"
-                color="yellow"
-              />
-            </div>
-          </div>
-           */}
           {/* Active Tab Content */}
           {tabs.find(tab => tab.id === activeTab)?.component}
         </div>

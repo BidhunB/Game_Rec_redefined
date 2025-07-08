@@ -75,25 +75,6 @@ export default function TFIDFRec() {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-green-400 text-lg">📈</span>
-                    <span className="text-sm font-semibold text-gray-200">
-                      {(game.similarity * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-emerald-400 text-lg">🧠</span>
-                    <span className="text-sm text-gray-300 font-medium">
-                      TF-IDF
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
               {/* Like Button */}
               <div className="mt-4 flex justify-center">
                 <LikeButton gameId={game.id} gameName={game.name} />

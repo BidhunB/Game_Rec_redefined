@@ -7,34 +7,34 @@ type Game = {
   id: number;
   name: string;
   genre_text: string;
-  similarity: number;
+  score: number;
   background_image?: string;
 };
 
-export default function BERTRec() {
+export default function HybridTFIDFRec() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/recommend/bert?user_id=user1")
+    fetch("http://127.0.0.1:8000/recommend/hybrid-tfidf?user_id=user1")
       .then((res) => res.json())
       .then((data) => {
+        console.log(data);
         setGames(data);
         setLoading(false);
       });
   }, []);
 
-  if (loading) return <LoadingSpinner color="purple" text="Loading BERT recommendations..." />;
+  if (loading) return <LoadingSpinner color="green" text="Loading Hybrid TFIDF recommendations..." />;
 
   return (
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-white mb-2">
-          🤖 BERT AI Recommendations
+          🧬 Hybrid TFIDF Recommendations
         </h2>
-        <p className="text-gray-300">Deep learning semantic analysis using BERT embeddings</p>
+        <p className="text-gray-300">Combines collaborative and content-based AI for smarter suggestions</p>
       </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {games.map((game) => (
           <div
@@ -51,30 +51,27 @@ export default function BERTRec() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                 <div className="absolute top-3 right-3">
                   <div className="bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
-                    📈 {(game.similarity * 100).toFixed(1)}%
+                    📊 {(game.score * 100).toFixed(1)}%
                   </div>
                 </div>
               </div>
             )}
-            
             <div className="p-5">
-              <h3 className="font-bold text-lg mb-3 text-white group-hover:text-purple-300 transition-colors duration-300 line-clamp-2">
+              <h3 className="font-bold text-lg mb-3 text-white group-hover:text-teal-300 transition-colors duration-300 line-clamp-2">
                 {game.name}
               </h3>
-              
               <div className="mb-4">
                 <div className="flex flex-wrap gap-2">
                   {game.genre_text.split(',').map((genre, index) => (
                     <span
                       key={index}
-                      className="bg-purple-500/20 text-purple-200 px-3 py-1 rounded-full text-xs font-medium border border-purple-400/30"
+                      className="bg-teal-500/20 text-teal-200 px-3 py-1 rounded-full text-xs font-medium border border-teal-400/30"
                     >
                       {genre.trim()}
                     </span>
                   ))}
                 </div>
               </div>
-              
               {/* Like Button */}
               <div className="mt-4 flex justify-center">
                 <LikeButton gameId={game.id} gameName={game.name} />
@@ -85,4 +82,4 @@ export default function BERTRec() {
       </div>
     </div>
   );
-}
+} 
