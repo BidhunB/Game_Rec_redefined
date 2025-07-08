@@ -105,10 +105,10 @@ Contributions are welcome! Please open issues or pull requests for improvements.
 
 ## Credits
 **Developed by:**
-- Joel Joy
-- Bindun B
-- Varghese Francis
-- Ashok Xavier
+- [Joel Joy](https://github.com/Joeljoy1237)
+- [Bindun B](https://github.com/BidhunB/)
+- [Varghese Francis](https://github.com/VargheeseFrancis)
+- [Ashok Xavier](https://github.com/AshokXavier)
 
 Special thanks to the open-source community and the RAWG API.
 
