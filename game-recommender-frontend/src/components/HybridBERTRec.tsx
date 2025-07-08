@@ -8,7 +8,7 @@ type Game = {
   id: number;
   name: string;
   genre_text: string;
-  similarity: number;
+  score: number;
   background_image?: string;
 };
 
@@ -53,7 +53,7 @@ export default function HybridBERTRec() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                 <div className="absolute top-3 right-3">
                   <div className="bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
-                    📊 {(game.similarity * 100).toFixed(1)}%
+                    📊 {(game.score * 100).toFixed(1)}%
                   </div>
                 </div>
               </div>
