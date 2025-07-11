@@ -6,7 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import threading
 import csv
 
-from recommender_test import (
+from recommender import (
     load_games_dataset,
     cold_start_recommendations,
     prepare_tfidf_matrix,
@@ -94,6 +94,7 @@ def cold_start():
 
 @app.get("/recommend/tfidf")
 def recommend_tfidf(user_id: str = "user1"):
+    print(f"[Recommend] User ID: {user_id}")
     interactions = get_sample_interactions()
     recs = recommend_for_user(user_id, interactions, games_df, tfidf_matrix, top_n=12)
     return recs.to_dict(orient="records")
