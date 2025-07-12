@@ -16,7 +16,7 @@ export default function TFIDFRec() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/recommend/tfidf?user_id=user1")
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/tfidf?user_id=user1`)
       .then((res) => res.json())
       .then((data) => {
         setGames(data);

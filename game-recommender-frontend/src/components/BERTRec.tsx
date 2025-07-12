@@ -17,7 +17,7 @@ export default function BERTRec() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/recommend/bert?user_id=user1")
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/bert?user_id=user1`)
       .then((res) => res.json())
       .then((data) => {
         setGames(data);
