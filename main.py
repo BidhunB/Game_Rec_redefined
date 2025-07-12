@@ -5,6 +5,8 @@ from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 import threading
 import csv
+import uvicorn
+import os
 
 from recommender import (
     load_games_dataset,
@@ -20,6 +22,12 @@ from recommender import (
 )
 
 app = FastAPI()
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))  # Render provides PORT env var
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
+
 
 # === CORS Setup ===
 app.add_middleware(
