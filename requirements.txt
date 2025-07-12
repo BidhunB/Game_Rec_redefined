@@ -1,7 +1,10 @@
 fastapi
 uvicorn
-pandas
-numpy
-scikit-learn
 apscheduler
+pandas
+scikit-learn
+numpy
+pydantic
 sentence-transformers
+python-multipart
+aiofiles
