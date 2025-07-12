@@ -18,7 +18,7 @@ export default function ColdStart() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/cold-start") // your FastAPI route
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/cold-start`)
       .then((res) => res.json())
       .then((data) => {
         setGames(data);

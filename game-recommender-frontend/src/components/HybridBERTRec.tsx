@@ -17,7 +17,7 @@ export default function HybridBERTRec() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/recommend/hybrid-bert?user_id=user1")
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/hybrid-bert?user_id=user1`)
       .then((res) => res.json())
       .then((data) => {
         setGames(data);

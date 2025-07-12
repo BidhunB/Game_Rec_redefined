@@ -87,7 +87,7 @@ export default function LikeButton({ gameId, gameName, initialLiked = false, ini
         rating,
         timestamp: new Date().toISOString(),
       };
-      const response = await fetch("http://localhost:8000/newInteraction", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/newInteraction`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -150,7 +150,7 @@ export default function LikeButton({ gameId, gameName, initialLiked = false, ini
           {isLoading && showRating === 'dislike' ? (
             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
           ) : (
-            <span className="text-lg">{isDisliked ? "👎" : "👍"}</span>
+            <span className="text-lg">{isDisliked ? "👎" : "🙁"}</span>
           )}
           <span className="text-sm font-medium">
             {isLoading && showRating === 'dislike' ? "..." : isDisliked ? "Disliked" : "Dislike"}
