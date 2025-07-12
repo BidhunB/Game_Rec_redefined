@@ -106,7 +106,7 @@ Contributions are welcome! Please open issues or pull requests for improvements.
 ## Credits
 **Developed by:**
 - [Joel Joy](https://github.com/Joeljoy1237)
-- [Bindun B](https://github.com/BidhunB/)
+- [Bidhun B](https://github.com/BidhunB/)
 - [Varghese Francis](https://github.com/VargheeseFrancis)
 - [Ashok Xavier](https://github.com/AshokXavier)
 
