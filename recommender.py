@@ -70,9 +70,7 @@ def load_games_dataset(csv_path: str):
         df['name'] + " " +
         df['genre_text'] + " " +
         df['tag_text'] + " " +
-        df['platform_text'] + " " +
-        df['description'] + " " +
-        df['developer']
+        df['description']
     ).str.lower()
 
     df = df.dropna(subset=['combined'])
