@@ -5,7 +5,6 @@ Game Recommendation System - Test and Utility Functions
 
 This module provides data loading, feature preparation, and various recommendation algorithms (content-based, collaborative, hybrid) for a game recommender system. It includes TF-IDF and BERT-based approaches, as well as cold start and hybrid strategies. Designed for experimentation and evaluation.
 """
-import os
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -14,6 +13,11 @@ from sentence_transformers import SentenceTransformer
 from sklearn.preprocessing import normalize
 import ast
 from tqdm import tqdm
+import os
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
+import glob
 
 # === 1. DATA LOADING ===
 import pandas as pd
@@ -41,18 +45,21 @@ def extract_names_from_column(col):
     return col.fillna("[]").apply(safe_extract)
 
 
-def load_games_dataset(csv_path: str):
+def load_games_dataset(csv_path: str, nrows: int = None):
     """
     Loads and preprocesses the games dataset from a CSV file.
+    Optionally loads only the first `nrows` rows for memory efficiency.
     - Extracts genre, tag, and platform names from complex columns.
     - Normalizes and lowercases text fields.
     - Combines relevant fields into a single string for embedding.
     Args:
         csv_path (str): Path to the games CSV file.
+        nrows (int, optional): Number of rows to load. If None, loads all.
     Returns:
         pd.DataFrame: Preprocessed games DataFrame.
     """
     df = pd.read_csv(csv_path)
+    df = df.sample(n=100, random_state=42)  # Randomly select 100 rows
 
     # Safely extract string features from complex columns
     df['genre_text'] = extract_names_from_column(df.get('genres', pd.Series()))
@@ -98,7 +105,7 @@ def prepare_tfidf_matrix(games_df):
     return vectorizer.fit_transform(games_df["combined"])
 
 
-def sentence_transformer_model(games_df, batch_size=1, chunk_size=50):
+def sentence_transformer_model(games_df, batch_size=1, chunk_size=10):
     """
     Encodes the 'combined' text field using a pre-trained SentenceTransformer (BERT-like) model.
     Args:
@@ -120,6 +127,41 @@ def sentence_transformer_model(games_df, batch_size=1, chunk_size=50):
         embeddings.extend(emb)
 
     return np.array(embeddings)
+
+def sentence_transformer_model_save_chunks(games_df, batch_size=1, chunk_size=10, out_dir="embeddings_chunks"):
+    """
+    Encodes the 'combined' text field using a pre-trained SentenceTransformer (BERT-like) model,
+    saving each chunk to disk to avoid high memory usage.
+    Args:
+        games_df (pd.DataFrame): Games DataFrame with 'combined' column.
+        batch_size (int): Batch size for encoding.
+        chunk_size (int): Number of texts per chunk.
+        out_dir (str): Directory to save embedding chunks.
+    Returns:
+        List of file paths to saved embedding chunks.
+    """
+    os.makedirs(out_dir, exist_ok=True)
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    texts = games_df["combined"].tolist()
+    chunk_files = []
+
+    for i, chunk in enumerate(tqdm(np.array_split(texts, max(1, len(texts) // chunk_size + 1)), desc="Encoding chunks")):
+        emb = model.encode(
+            chunk,
+            batch_size=batch_size,
+            convert_to_numpy=True,
+            show_progress_bar=False
+        )
+        chunk_path = os.path.join(out_dir, f"embeddings_chunk_{i}.npy")
+        np.save(chunk_path, emb)
+        chunk_files.append(chunk_path)
+
+    return chunk_files
+
+def load_all_embeddings(out_dir="embeddings_chunks"):
+    chunk_files = sorted(glob.glob(os.path.join(out_dir, "embeddings_chunk_*.npy")))
+    embeddings = [np.load(f) for f in chunk_files]
+    return np.vstack(embeddings)
 
 # === 3. COLD START RECOMMENDATION ===
 def cold_start_recommendations(games_df, top_n=10):
