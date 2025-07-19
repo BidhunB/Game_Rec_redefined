@@ -82,19 +82,11 @@ def load_games_dataset(csv_path: str):
 
 def get_sample_interactions():
     """
-    Loads user interaction data from 'user_interactions.csv' if available.
-    Returns a DataFrame with columns: user_id, game_id, liked, rating.
-    Returns empty DataFrame if file not found.
+    This function is deprecated. Use database.get_interactions_dataframe() instead.
+    Returns empty DataFrame for backward compatibility.
     """
-    csv_path = "user_interactions.csv"
-    if os.path.isfile(csv_path):
-        df = pd.read_csv(csv_path)
-        df["liked"] = df["liked"].astype(bool)
-        df["rating"] = df["rating"].astype(int)
-        return df
-    else:
-        print(f"File {csv_path} not found. Returning empty DataFrame.")
-        return pd.DataFrame(columns=["user_id", "game_id", "liked", "rating"])
+    print("Warning: get_sample_interactions() is deprecated. Use database.get_interactions_dataframe() instead.")
+    return pd.DataFrame(columns=["user_id", "game_id", "liked", "rating"])
 
 # === 2. FEATURE PREPARATION ===
 def prepare_tfidf_matrix(games_df):

@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import LikeButton from "./LikeButton";
+import EmptyState from "./EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserId } from "@/utils/userUtils";
 import Image from "next/image";
 
 type Game = {
@@ -15,15 +18,37 @@ type Game = {
 export default function CollaborativeRec() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/collaborative?user_id=user1`)
-      .then((res) => res.json())
+  const fetchRecommendations = () => {
+    const userId = getUserId(user, "user1");
+    console.log("[CollaborativeRec] Fetching recommendations for user:", userId);
+    setLoading(true);
+    setError(null);
+    
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/collaborative?user_id=${encodeURIComponent(userId)}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
+        console.log("[CollaborativeRec] Received recommendations:", data.length, "games");
         setGames(data);
         setLoading(false);
+      })
+      .catch((error) => {
+        console.error("[CollaborativeRec] Error fetching recommendations:", error);
+        setError(error.message);
+        setLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchRecommendations();
+  }, [user]);
 
   if (loading) return <LoadingSpinner color="yellow" text="Loading Collaborative recommendations..." />;
 

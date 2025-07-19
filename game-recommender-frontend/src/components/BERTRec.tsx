@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import LikeButton from "./LikeButton";
+import EmptyState from "./EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserId } from "@/utils/userUtils";
 import Image from "next/image";
 
 type Game = {
@@ -15,17 +18,59 @@ type Game = {
 export default function BERTRec() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/bert?user_id=user1`)
-      .then((res) => res.json())
+  const fetchRecommendations = () => {
+    const userId = getUserId(user, "user1");
+    console.log("[BERTRec] Fetching recommendations for user:", userId);
+    setLoading(true);
+    setError(null);
+    
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/bert?user_id=${encodeURIComponent(userId)}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
+        console.log("[BERTRec] Received recommendations:", data.length, "games");
         setGames(data);
         setLoading(false);
+      })
+      .catch((error) => {
+        console.error("[BERTRec] Error fetching recommendations:", error);
+        setError(error.message);
+        setLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchRecommendations();
+  }, [user]);
 
   if (loading) return <LoadingSpinner color="purple" text="Loading BERT recommendations..." />;
+
+  // Handle empty state
+  if (!loading && (games.length === 0 || error)) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-white mb-2">
+            🤖 BERT AI Recommendations
+          </h2>
+          <p className="text-gray-300">Deep learning semantic analysis using BERT embeddings</p>
+        </div>
+        
+        <EmptyState 
+          algorithm="BERT" 
+          color="purple" 
+          onRetry={fetchRecommendations}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -34,6 +79,11 @@ export default function BERTRec() {
           🤖 BERT AI Recommendations
         </h2>
         <p className="text-gray-300">Deep learning semantic analysis using BERT embeddings</p>
+        {games.length > 0 && (
+          <p className="text-purple-300 text-sm mt-2">
+            Found {games.length} personalized recommendations
+          </p>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

@@ -1,38 +1,25 @@
+"use client";
+import React from 'react';
+
 interface LoadingSpinnerProps {
-  color?: 'blue' | 'green' | 'purple' | 'yellow';
-  size?: 'sm' | 'md' | 'lg';
+  color?: string;
   text?: string;
 }
 
-export default function LoadingSpinner({ 
-  color = "blue", 
-  size = "md", 
-  text = "Loading..." 
-}: LoadingSpinnerProps) {
-  const sizeClasses = {
-    sm: "h-8 w-8",
-    md: "h-12 w-12", 
-    lg: "h-16 w-16"
-  };
-
+export default function LoadingSpinner({ color = "blue", text = "Loading..." }: LoadingSpinnerProps) {
   const colorClasses = {
-    blue: "border-blue-500",
-    green: "border-green-500",
-    purple: "border-purple-500",
-    yellow: "border-yellow-500"
+    blue: "text-blue-500",
+    green: "text-green-500",
+    red: "text-red-500",
+    yellow: "text-yellow-500",
+    purple: "text-purple-500",
+    white: "text-white"
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-64 space-y-4">
-      <div className="relative">
-        <div className={`${sizeClasses[size]} ${colorClasses[color]} border-2 border-t-transparent rounded-full animate-spin`}></div>
-        <div className={`absolute inset-0 ${sizeClasses[size]} ${colorClasses[color]} border-2 border-t-transparent rounded-full animate-ping opacity-20`}></div>
-      </div>
-      {text && (
-        <div className="text-gray-300 text-sm font-medium animate-pulse">
-          {text}
-        </div>
-      )}
+    <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className={`animate-spin rounded-full h-12 w-12 border-b-2 border-t-2 ${colorClasses[color as keyof typeof colorClasses] || colorClasses.blue}`}></div>
+      <p className="mt-4 text-gray-300 text-lg">{text}</p>
     </div>
   );
 } 

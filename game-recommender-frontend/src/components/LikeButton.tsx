@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useToast } from "@/contexts/ToastContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserId, sanitizeUserId } from "@/utils/userUtils";
 import { createPortal } from "react-dom";
 
 interface LikeButtonProps {
@@ -61,11 +63,20 @@ export default function LikeButton({ gameId, gameName, initialLiked = false, ini
   const [isLoading, setIsLoading] = useState(false);
   const [showRating, setShowRating] = useState<null | 'like' | 'dislike'>(null);
   const { showToast } = useToast();
+  const { user, isAuthenticated } = useAuth();
 
   const handleLike = () => {
+    if (!isAuthenticated) {
+      showToast("Please sign in to like games", "error");
+      return;
+    }
     setShowRating('like');
   };
   const handleDislike = () => {
+    if (!isAuthenticated) {
+      showToast("Please sign in to dislike games", "error");
+      return;
+    }
     setShowRating('dislike');
   };
 
@@ -80,8 +91,9 @@ export default function LikeButton({ gameId, gameName, initialLiked = false, ini
     };
     try {
       // Also submit to /newInteraction
+      const userId = sanitizeUserId(getUserId(user, "anonymous"));
       const interactionPayload = {
-        user_id: "user1",
+        user_id: userId,
         game_id: gameId,
         liked: showRating === 'like',
         rating,

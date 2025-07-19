@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import LikeButton from "./LikeButton";
+import EmptyState from "./EmptyState";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserId, isValidUserId } from "@/utils/userUtils";
 import Image from "next/image";
 type Game = {
   id: number;
@@ -14,17 +17,59 @@ type Game = {
 export default function TFIDFRec() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/tfidf?user_id=user1`)
-      .then((res) => res.json())
+  const fetchRecommendations = () => {
+    const userId = getUserId(user, "user1");
+    console.log("[TFIDFRec] Fetching recommendations for user:", userId);
+    setLoading(true);
+    setError(null);
+    
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/tfidf?user_id=${encodeURIComponent(userId)}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
+        console.log("[TFIDFRec] Received recommendations:", data.length, "games");
         setGames(data);
         setLoading(false);
+      })
+      .catch((error) => {
+        console.error("[TFIDFRec] Error fetching recommendations:", error);
+        setError(error.message);
+        setLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchRecommendations();
+  }, [user]);
 
   if (loading) return <LoadingSpinner color="green" text="Loading TF-IDF recommendations..." />;
+
+  // Handle empty state
+  if (!loading && (games.length === 0 || error)) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-white mb-2">
+            🧠 TF-IDF AI Recommendations
+          </h2>
+          <p className="text-gray-300">AI-powered content-based filtering using TF-IDF algorithm</p>
+        </div>
+        
+        <EmptyState 
+          algorithm="TF-IDF" 
+          color="green" 
+          onRetry={fetchRecommendations}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -33,6 +78,11 @@ export default function TFIDFRec() {
           🧠 TF-IDF AI Recommendations
         </h2>
         <p className="text-gray-300">AI-powered content-based filtering using TF-IDF algorithm</p>
+        {games.length > 0 && (
+          <p className="text-green-300 text-sm mt-2">
+            Found {games.length} personalized recommendations
+          </p>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

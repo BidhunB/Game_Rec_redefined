@@ -6,9 +6,17 @@ import BERTRec from "@/components/BERTRec";
 import HybridBERTRec from "@/components/HybridBERTRec";
 import CollaborativeRec from "@/components/CollaborativeRec";
 import HybridTFIDFRec from "@/components/HybridTFIDFRec";
+import UserProfile from "@/components/UserProfile";
+import SignInButton from "@/components/SignInButton";
+import UserStats from "@/components/UserStats";
+import UserDebug from "@/components/UserDebug";
+import ApiTest from "@/components/ApiTest";
+import AdminSetup from "@/components/AdminSetup";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("cold-start");
+  const { isAuthenticated, loading } = useAuth();
 
   const tabs = [
     {
@@ -57,24 +65,32 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
-        <div className="relative z-10 px-6 py-16">
-          <div className="max-w-7xl mx-auto text-center">
-            <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-2xl">
-                <span className="text-3xl">🎮</span>
-              </div>
-              <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent mb-4">
-                Game Recommender
-              </h1>
-              <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                Discover your next favorite game with AI-powered recommendations
-              </p>
+      {/* Header with Auth */}
+      <div className="relative z-20 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-lg">
+              <span className="text-xl">🎮</span>
             </div>
+            <h1 className="text-2xl font-bold text-white">Game Recommender</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            {loading ? (
+              <div className="text-white">Loading...</div>
+            ) : (
+              <>
+                <UserProfile />
+                <SignInButton />
+              </>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Hero Section */}
+      <div className="relative overflow-hidden pt-20">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
+        
         
         {/* Animated background elements */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
@@ -112,6 +128,20 @@ export default function Home() {
       {/* Content Area */}
       <div className="relative z-10 px-6 py-12">
         <div className="max-w-7xl mx-auto">
+          
+          {/* Debug Info (admin only) */}
+          <div className="mb-8 space-y-4">
+            <UserDebug />
+            <ApiTest />
+          </div>
+          
+          {/* User Stats */}
+          {isAuthenticated && (
+            <div className="mb-8">
+              <UserStats />
+            </div>
+          )}
+          
           {/* Active Tab Content */}
           {tabs.find(tab => tab.id === activeTab)?.component}
         </div>

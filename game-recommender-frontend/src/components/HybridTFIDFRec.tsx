@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import LikeButton from "./LikeButton";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserId } from "@/utils/userUtils";
 import Image from "next/image";
 
 type Game = {
@@ -15,16 +17,29 @@ type Game = {
 export default function HybridTFIDFRec() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/hybrid-tfidf?user_id=user1`)
-      .then((res) => res.json())
+    const userId = getUserId(user, "user1");
+    console.log("[HybridTFIDFRec] Fetching recommendations for user:", userId);
+    
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/recommend/hybrid-tfidf?user_id=${encodeURIComponent(userId)}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        console.log(data);
+        console.log("[HybridTFIDFRec] Received recommendations:", data.length, "games");
         setGames(data);
         setLoading(false);
+      })
+      .catch((error) => {
+        console.error("[HybridTFIDFRec] Error fetching recommendations:", error);
+        setLoading(false);
       });
-  }, []);
+  }, [user]);
 
   if (loading) return <LoadingSpinner color="green" text="Loading Hybrid TFIDF recommendations..." />;
 
