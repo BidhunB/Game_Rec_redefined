@@ -45,27 +45,6 @@ lock = threading.Lock()
 # Initialize database connection
 db_service.connect()
 
-def update_game_data():
-    global games_df, tfidf_matrix, embeddings
-    try:
-        print("[Update] Loading fresh data...")
-        new_df = load_games_dataset("rawg_games.csv")
-        new_tfidf = prepare_tfidf_matrix(new_df)
-        new_embeddings = sentence_transformer_model(new_df)
-
-        with lock:
-            games_df = new_df
-            tfidf_matrix = new_tfidf
-            embeddings = new_embeddings
-        print("[Update] Game data updated.")
-    except Exception as e:
-        print(f"[Update Error] {e}")
-
-# Scheduler setup
-scheduler = BackgroundScheduler()
-scheduler.add_job(update_game_data, "interval", minutes=5)  # Adjust timing as needed
-scheduler.start()
-
 # === Pydantic Models ===
 class InteractionData(BaseModel):
     user_id: str
