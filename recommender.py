@@ -13,6 +13,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 from sklearn.preprocessing import normalize
 import ast
+from tqdm import tqdm
 
 # === 1. DATA LOADING ===
 import pandas as pd
@@ -68,8 +69,7 @@ def load_games_dataset(csv_path: str):
     df['combined'] = (
         df['name'] + " " +
         df['genre_text'] + " " +
-        df['tag_text'] + " " +
-        df['description']
+        df['tag_text']
     ).str.lower()
 
     df = df.dropna(subset=['combined'])
@@ -98,7 +98,7 @@ def prepare_tfidf_matrix(games_df):
     return vectorizer.fit_transform(games_df["combined"])
 
 
-def sentence_transformer_model(games_df):
+def sentence_transformer_model(games_df, batch_size=1, chunk_size=50):
     """
     Encodes the 'combined' text field using a pre-trained SentenceTransformer (BERT-like) model.
     Args:
@@ -107,7 +107,19 @@ def sentence_transformer_model(games_df):
         np.ndarray: Array of dense embeddings.
     """
     model = SentenceTransformer('all-MiniLM-L6-v2')
-    return model.encode(games_df["combined"].tolist(), show_progress_bar=True)
+    texts = games_df["combined"].tolist()
+    embeddings = []
+
+    for chunk in tqdm(np.array_split(texts, max(1, len(texts) // chunk_size + 1)), desc="Encoding chunks"):
+        emb = model.encode(
+            chunk,
+            batch_size=batch_size,
+            convert_to_numpy=True,
+            show_progress_bar=False
+        )
+        embeddings.extend(emb)
+
+    return np.array(embeddings)
 
 # === 3. COLD START RECOMMENDATION ===
 def cold_start_recommendations(games_df, top_n=10):

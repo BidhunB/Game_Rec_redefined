@@ -12,8 +12,9 @@ out/
 build/
 dist/
 
-# Production
-/build
+# Production builds
+*.tgz
+*.tar.gz
 
 # Runtime data
 pids
@@ -83,7 +84,6 @@ jspm_packages/
 
 # Next.js build output
 .next
-out
 
 # Nuxt.js build / generate output
 .nuxt
@@ -331,54 +331,41 @@ logs
 ehthumbs.db
 Thumbs.db
 
-# Game Recommender specific
-# Local dataset files (if any)
-*.csv
-!rawg_games.csv  # Keep the main dataset
-user_interactions.csv
+# MongoDB
+*.lock
 
-# Model files
+# ML Models and Data
 *.pkl
 *.joblib
 *.h5
 *.hdf5
 *.model
+*.bin
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.pb
+*.savedmodel/
+models/
+data/
+datasets/
+*.csv
+*.json
+*.parquet
+*.feather
 
-# Cache directories
-.cache/
-__pycache__/
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
 
-# API keys and secrets
+# Local development
 .env.local
-.env.production
-.env.development
-secrets.json
-config.json
+.env.development.local
+.env.test.local
+.env.production.local
 
-# MongoDB
-*.bson
-*.dump
+# Vercel
+.vercel
 
-# Backup files
-*.bak
-*.backup
-*.old
-
-# Test files
-test_*.py
-*_test.py
-tests/
-
-# Documentation
-docs/
-*.md
-!README.md
-
-# Deployment
-deploy/
-production/
-staging/
-
-# Monitoring
-logs/
-*.log 
+# Turbo
+.turbo 
