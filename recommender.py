@@ -56,10 +56,9 @@ def load_games_dataset(csv_path: str):
     # Safely extract string features from complex columns
     df['genre_text'] = extract_names_from_column(df.get('genres', pd.Series()))
     df['tag_text'] = extract_names_from_column(df.get('tags', pd.Series()))
-    df['platform_text'] = extract_names_from_column(df.get('platforms', pd.Series()))
 
     # Normalize and lowercase basic columns
-    for col in ['name', 'description', 'developer']:
+    for col in ['name', 'description']:
         if col in df.columns:
             df[col] = df[col].fillna("").astype(str).str.lower()
         else:
