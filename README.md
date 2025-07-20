@@ -176,7 +176,7 @@ For production deployment (e.g., Render):
 
 ```env
 # MongoDB Atlas (Production)
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/<dbname>?retryWrites=true&w=majority
 MONGODB_DB=game-recommender-prod
 
 # NextAuth (Production)
