@@ -45,7 +45,7 @@ def extract_names_from_column(col):
     return col.fillna("[]").apply(safe_extract)
 
 
-def load_games_dataset(csv_path: str, nrows: int = None):
+def load_games_dataset(csv_path: str, nrows: int = 100):
     """
     Loads and preprocesses the games dataset from a CSV file.
     Optionally loads only the first `nrows` rows for memory efficiency.
