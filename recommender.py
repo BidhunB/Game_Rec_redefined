@@ -1,10 +1,4 @@
-"""
-recommender.py
--------------------
-Game Recommendation System - Test and Utility Functions
 
-This module provides data loading, feature preparation, and various recommendation algorithms (content-based, collaborative, hybrid) for a game recommender system. It includes TF-IDF and BERT-based approaches, as well as cold start and hybrid strategies. Designed for experimentation and evaluation.
-"""
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -25,14 +19,7 @@ import ast
 
 
 def extract_names_from_column(col):
-    """
-    Safely extracts and concatenates 'name' fields from a column containing stringified lists of dicts.
-    Used for columns like genres, tags, platforms.
-    Args:
-        col (pd.Series): Column with stringified list of dicts or NaN.
-    Returns:
-        pd.Series: Series of space-separated names as strings.
-    """
+    
     def safe_extract(item):
         try:
             parsed = ast.literal_eval(item)
@@ -46,18 +33,7 @@ def extract_names_from_column(col):
 
 
 def load_games_dataset(csv_path: str, nrows: int = 100):
-    """
-    Loads and preprocesses the games dataset from a CSV file.
-    Optionally loads only the first `nrows` rows for memory efficiency.
-    - Extracts genre, tag, and platform names from complex columns.
-    - Normalizes and lowercases text fields.
-    - Combines relevant fields into a single string for embedding.
-    Args:
-        csv_path (str): Path to the games CSV file.
-        nrows (int, optional): Number of rows to load. If None, loads all.
-    Returns:
-        pd.DataFrame: Preprocessed games DataFrame.
-    """
+    
     df = pd.read_csv(csv_path)
     df = df.sample(n=100, random_state=42)  # Randomly select 100 rows
 
@@ -85,35 +61,20 @@ def load_games_dataset(csv_path: str, nrows: int = 100):
 
 
 def get_sample_interactions():
-    """
-    This function is deprecated. Use database.get_interactions_dataframe() instead.
-    Returns empty DataFrame for backward compatibility.
-    """
+    
     print("Warning: get_sample_interactions() is deprecated. Use database.get_interactions_dataframe() instead.")
     return pd.DataFrame(columns=["user_id", "game_id", "liked", "rating"])
 
 # === 2. FEATURE PREPARATION ===
 def prepare_tfidf_matrix(games_df):
-    """
-    Fits a TF-IDF vectorizer on the 'combined' text field of the games DataFrame.
-    Args:
-        games_df (pd.DataFrame): Games DataFrame with 'combined' column.
-    Returns:
-        scipy.sparse matrix: TF-IDF feature matrix.
-    """
+    
     vectorizer = TfidfVectorizer(stop_words='english')
     return vectorizer.fit_transform(games_df["combined"])
 
 
 def sentence_transformer_model(games_df, batch_size=1, chunk_size=10):
-    """
-    Encodes the 'combined' text field using a pre-trained SentenceTransformer (BERT-like) model.
-    Args:
-        games_df (pd.DataFrame): Games DataFrame with 'combined' column.
-    Returns:
-        np.ndarray: Array of dense embeddings.
-    """
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
     texts = games_df["combined"].tolist()
     embeddings = []
 
@@ -129,19 +90,9 @@ def sentence_transformer_model(games_df, batch_size=1, chunk_size=10):
     return np.array(embeddings)
 
 def sentence_transformer_model_save_chunks(games_df, batch_size=1, chunk_size=10, out_dir="embeddings_chunks"):
-    """
-    Encodes the 'combined' text field using a pre-trained SentenceTransformer (BERT-like) model,
-    saving each chunk to disk to avoid high memory usage.
-    Args:
-        games_df (pd.DataFrame): Games DataFrame with 'combined' column.
-        batch_size (int): Batch size for encoding.
-        chunk_size (int): Number of texts per chunk.
-        out_dir (str): Directory to save embedding chunks.
-    Returns:
-        List of file paths to saved embedding chunks.
-    """
+    
     os.makedirs(out_dir, exist_ok=True)
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+    model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
     texts = games_df["combined"].tolist()
     chunk_files = []
 
@@ -165,14 +116,7 @@ def load_all_embeddings(out_dir="embeddings_chunks"):
 
 # === 3. COLD START RECOMMENDATION ===
 def cold_start_recommendations(games_df, top_n=10):
-    """
-    Provides recommendations for new users (no history) by returning top-rated or random games.
-    Args:
-        games_df (pd.DataFrame): Games DataFrame.
-        top_n (int): Number of recommendations to return.
-    Returns:
-        pd.DataFrame: Top N recommended games.
-    """
+    
     sort_cols = [col for col in ['rating', 'ratings_count'] if col in games_df.columns]
     if not sort_cols:
         return games_df.sample(n=top_n)
@@ -180,18 +124,7 @@ def cold_start_recommendations(games_df, top_n=10):
 
 # === 4. CONTENT-BASED RECOMMENDATION ===
 def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=10):
-    """
-    Content-based recommendation using TF-IDF features and user ratings.
-    Builds a user profile vector as a weighted sum of rated games' TF-IDF vectors.
-    Args:
-        user_id: User identifier.
-        interactions_df: DataFrame of user interactions.
-        games_df: Games DataFrame.
-        tfidf_matrix: TF-IDF feature matrix.
-        top_n: Number of recommendations to return.
-    Returns:
-        pd.DataFrame: Top N recommended games for the user.
-    """
+    
     # Step 1: Filter user's interactions
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     if user_interactions.empty:
@@ -231,17 +164,7 @@ def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=1
 
 # === 5. CONTENT-BASED USING BERT (SentenceTransformer) ===
 def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=10):
-    """
-    Content-based recommendation using SentenceTransformer (BERT) embeddings and user ratings.
-    Args:
-        user_id: User identifier.
-        interactions_df: DataFrame of user interactions.
-        games_df: Games DataFrame.
-        embeddings: Precomputed dense embeddings for games.
-        top_n: Number of recommendations to return.
-    Returns:
-        pd.DataFrame: Top N recommended games for the user.
-    """
+    
     # Filter user interactions
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
 
@@ -292,15 +215,7 @@ def recommend_for_user_sentence_transformer(user_id, interactions_df, games_df, 
 
 # === 6. COLLABORATIVE FILTERING ===
 def get_collaborative_scores(user_id, interactions_df, games_df):
-    """
-    Computes collaborative filtering scores for all games for a given user using user-game interaction matrix.
-    Args:
-        user_id: User identifier.
-        interactions_df: DataFrame of user interactions.
-        games_df: Games DataFrame.
-    Returns:
-        np.ndarray: Array of collaborative scores for each game.
-    """
+    
     matrix = pd.pivot_table(
         interactions_df,
         values='liked',
@@ -329,16 +244,7 @@ def get_collaborative_scores(user_id, interactions_df, games_df):
 
 # === 7. HYBRID RECOMMENDATIONS ===
 def get_content_scores(user_id, interactions_df, games_df, tfidf_matrix):
-    """
-    Computes content-based scores for a user using liked/disliked games and TF-IDF features.
-    Args:
-        user_id: User identifier.
-        interactions_df: DataFrame of user interactions.
-        games_df: Games DataFrame.
-        tfidf_matrix: TF-IDF feature matrix.
-    Returns:
-        np.ndarray: Content-based similarity scores for all games.
-    """
+    
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
     disliked_ids = user_interactions[~user_interactions['liked']]['game_id']
@@ -364,19 +270,7 @@ def get_content_scores(user_id, interactions_df, games_df, tfidf_matrix):
     return cosine_similarity(user_vector, tfidf).flatten()
 
 def hybrid_recommendation(user_id, interactions_df, games_df, tfidf_matrix, top_n=10, content_weight=0.5, collab_weight=0.5):
-    """
-    Hybrid recommendation combining content-based (TF-IDF) and collaborative filtering scores.
-    Args:
-        user_id: User identifier.
-        interactions_df: DataFrame of user interactions.
-        games_df: Games DataFrame.
-        tfidf_matrix: TF-IDF feature matrix.
-        top_n: Number of recommendations to return.
-        content_weight: Weight for content-based score.
-        collab_weight: Weight for collaborative score.
-    Returns:
-        pd.DataFrame: Top N hybrid recommended games for the user.
-    """
+    
     # Get scores
     content_scores = get_content_scores(user_id, interactions_df, games_df, tfidf_matrix)
     collab_scores = get_collaborative_scores(user_id, interactions_df, games_df)
@@ -407,16 +301,7 @@ def hybrid_recommendation(user_id, interactions_df, games_df, tfidf_matrix, top_
 
 # === 8. HYBRID BERT RECOMMENDATIONS ===
 def get_content_scores_sentence_transformer(user_id, interactions_df, games_df, embeddings):
-    """
-    Computes content-based scores for a user using liked/disliked games and SentenceTransformer embeddings.
-    Args:
-        user_id: User identifier.
-        interactions_df: DataFrame of user interactions.
-        games_df: Games DataFrame.
-        embeddings: Dense embedding matrix for games.
-    Returns:
-        np.ndarray: Content-based similarity scores for all games.
-    """
+    
     user_interactions = interactions_df[interactions_df['user_id'] == user_id]
     liked_ids = user_interactions[user_interactions['liked']]['game_id']
     disliked_ids = user_interactions[~user_interactions['liked']]['game_id']
@@ -437,19 +322,7 @@ def get_content_scores_sentence_transformer(user_id, interactions_df, games_df, 
 
 
 def hybrid_recommendation_sentence_transformer(user_id, interactions_df, games_df, embeddings, top_n=10, content_weight=0.5, collab_weight=0.5):
-    """
-    Hybrid recommendation combining content-based (SentenceTransformer) and collaborative filtering scores.
-    Args:
-        user_id: User identifier.
-        interactions_df: DataFrame of user interactions.
-        games_df: Games DataFrame.
-        embeddings: Dense embedding matrix for games.
-        top_n: Number of recommendations to return.
-        content_weight: Weight for content-based score.
-        collab_weight: Weight for collaborative score.
-    Returns:
-        pd.DataFrame: Top N hybrid recommended games for the user.
-    """
+    
     def safe_normalize(x):
         return (x - np.min(x)) / (np.max(x) - np.min(x) + 1e-9) if np.max(x) > np.min(x) else x
 
