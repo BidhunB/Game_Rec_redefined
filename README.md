@@ -205,31 +205,20 @@ NEXT_PUBLIC_API_URL=https://your-api-domain.com
    cd Game_Rec_redefined
    ```
 
-2. **Create virtual environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
 
-3. **Install Python dependencies:**
+2. **Install Python dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables:**
+3. **Set up environment variables:**
    ```bash
    cp .env.example .env
    # Edit .env with your MongoDB connection details
    ```
 
-5. **Prepare your dataset:**
-   ```bash
-   # Place your games CSV in the dataset folder
-   mkdir -p dataset
-   # Copy your rawg_games.csv to dataset/rawg_games.csv
-   ```
 
-6. **Start the backend server:**
+4. **Start the backend server:**
    ```bash
    python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
    ```
