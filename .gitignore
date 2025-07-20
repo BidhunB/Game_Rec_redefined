@@ -348,8 +348,6 @@ Thumbs.db
 *.pb
 *.savedmodel/
 models/
-data/
-datasets/
 *.csv
 *.json
 *.parquet
