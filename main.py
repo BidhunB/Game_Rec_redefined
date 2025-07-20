@@ -1,8 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from apscheduler.schedulers.background import BackgroundScheduler
-import threading
 import uvicorn
 import os
 
@@ -37,10 +35,9 @@ app.add_middleware(
 )
 
 # Shared variables
-games_df = load_games_dataset("rawg_games.csv")
+games_df = load_games_dataset("./dataset/rawg_games.csv")
 tfidf_matrix = prepare_tfidf_matrix(games_df)
 embeddings = sentence_transformer_model(games_df)
-lock = threading.Lock()
 
 # Initialize database connection
 db_service.connect()

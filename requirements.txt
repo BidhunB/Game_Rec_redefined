@@ -1,12 +1,10 @@
 fastapi
 uvicorn
-apscheduler
 pandas
 scikit-learn
 numpy
 pydantic
 sentence-transformers
-python-multipart
-aiofiles
 pymongo
 python-dotenv
+tqdm
