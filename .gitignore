@@ -335,7 +335,6 @@ Thumbs.db
 *.lock
 
 # ML Models and Data
-*.pkl
 *.joblib
 *.h5
 *.hdf5

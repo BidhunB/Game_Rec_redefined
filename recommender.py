@@ -17,6 +17,17 @@ import glob
 import pandas as pd
 import ast
 
+import pickle
+import os
+
+def save_embeddings(embeddings, path="saved/embeddings.pkl"):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
+        pickle.dump(embeddings, f)
+
+def load_saved_embeddings(path="saved/embeddings.pkl"):
+    with open(path, "rb") as f:
+        return pickle.load(f)
 
 def extract_names_from_column(col):
     
@@ -74,45 +85,13 @@ def prepare_tfidf_matrix(games_df):
 
 def sentence_transformer_model(games_df, batch_size=1, chunk_size=10):
     
-    model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
+    model = SentenceTransformer('all-MiniLM-L6-v2')
     texts = games_df["combined"].tolist()
     embeddings = []
-
-    for chunk in tqdm(np.array_split(texts, max(1, len(texts) // chunk_size + 1)), desc="Encoding chunks"):
-        emb = model.encode(
-            chunk,
-            batch_size=batch_size,
-            convert_to_numpy=True,
-            show_progress_bar=False
-        )
-        embeddings.extend(emb)
+    embeddings = model.encode(texts, show_progress_bar=True)
+    save_embeddings(embeddings)
 
     return np.array(embeddings)
-
-def sentence_transformer_model_save_chunks(games_df, batch_size=1, chunk_size=10, out_dir="embeddings_chunks"):
-    
-    os.makedirs(out_dir, exist_ok=True)
-    model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
-    texts = games_df["combined"].tolist()
-    chunk_files = []
-
-    for i, chunk in enumerate(tqdm(np.array_split(texts, max(1, len(texts) // chunk_size + 1)), desc="Encoding chunks")):
-        emb = model.encode(
-            chunk,
-            batch_size=batch_size,
-            convert_to_numpy=True,
-            show_progress_bar=False
-        )
-        chunk_path = os.path.join(out_dir, f"embeddings_chunk_{i}.npy")
-        np.save(chunk_path, emb)
-        chunk_files.append(chunk_path)
-
-    return chunk_files
-
-def load_all_embeddings(out_dir="embeddings_chunks"):
-    chunk_files = sorted(glob.glob(os.path.join(out_dir, "embeddings_chunk_*.npy")))
-    embeddings = [np.load(f) for f in chunk_files]
-    return np.vstack(embeddings)
 
 # === 3. COLD START RECOMMENDATION ===
 def cold_start_recommendations(games_df, top_n=10):

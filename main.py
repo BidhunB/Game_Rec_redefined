@@ -7,6 +7,7 @@ import os
 from recommender import (
     load_games_dataset,
     cold_start_recommendations,
+    load_saved_embeddings,
     prepare_tfidf_matrix,
     recommend_for_user,
     sentence_transformer_model,
@@ -37,7 +38,14 @@ app.add_middleware(
 # Shared variables
 games_df = load_games_dataset("./dataset/rawg_games.csv")
 tfidf_matrix = prepare_tfidf_matrix(games_df)
-embeddings = sentence_transformer_model(games_df)
+embeddings = ""
+
+try:
+    embeddings = load_saved_embeddings("saved/embeddings.pkl")
+    print("[Startup] Loaded saved embeddings")
+except Exception as e:
+    print(f"[Startup] Failed to load saved embeddings, computing them again: {e}")
+    embeddings = sentence_transformer_model(games_df)
 
 # Initialize database connection
 db_service.connect()
