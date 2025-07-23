@@ -110,12 +110,12 @@ def recommend_for_user(user_id, interactions_df, games_df, tfidf_matrix, top_n=1
         return pd.DataFrame()
 
     # Step 2: Match game IDs to DataFrame indices
-    game_id_to_index = pd.Series(games_df.index, index=games_df['id'])
+    game_id_to_index = pd.Series(games_df.index.values, index=games_df['id']).dropna()
     rated_game_ids = user_interactions['game_id']
-    ratings = user_interactions['rating']
+    rated_game_ids_in_games = rated_game_ids[rated_game_ids.isin(game_id_to_index.index)]
+    valid_indices = game_id_to_index[rated_game_ids_in_games].astype(int).tolist()
+    ratings = user_interactions[user_interactions['game_id'].isin(rated_game_ids_in_games)]['rating']
 
-    # Step 3: Find valid game indices
-    valid_indices = game_id_to_index[rated_game_ids].dropna().astype(int).tolist()
     if not valid_indices:
         return pd.DataFrame()
 
